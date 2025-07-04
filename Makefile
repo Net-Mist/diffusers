@@ -94,3 +94,18 @@ post-release:
 
 post-patch:
 	python utils/release.py --post_release --patch
+
+build:
+	docker build -t diffusers .
+
+run:
+	docker run \
+		-it \
+		--rm \
+		--device nvidia.com/gpu=all \
+		-v .:/workspace \
+		-v /home/siooss/.cache/huggingface:/root/.cache/huggingface \
+		--shm-size=20gb \
+		--name diffusers \
+		diffusers
+		

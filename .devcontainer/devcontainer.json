@@ -1,0 +1,23 @@
+{
+	"name": "Existing Dockerfile",
+	"image": "diffusers",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-azuretools.vscode-docker",
+				"eamodio.gitlens",
+				"ms-python.python",
+				"ms-toolsai.jupyter",
+				"charliermarsh.ruff",
+			]
+		}
+	},
+	"mounts": [
+		"source=/home/siooss/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached"
+	],
+	"runArgs": [
+		"--device=nvidia.com/gpu=all",
+		"--shm-size=20gb"
+	],
+	"updateRemoteUserUID": false
+}
