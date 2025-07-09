@@ -87,6 +87,7 @@ PIXART-α Controlnet pipeline | Implementation of the controlnet model for pixar
 | CogVideoX DDIM Inversion Pipeline | Implementation of DDIM inversion and guided attention-based editing denoising process on CogVideoX. | [CogVideoX DDIM Inversion Pipeline](#cogvideox-ddim-inversion-pipeline) | - | [LittleNyima](https://github.com/LittleNyima) |
 | FaithDiff Stable Diffusion XL Pipeline | Implementation of [(CVPR 2025) FaithDiff: Unleashing Diffusion Priors for Faithful Image Super-resolutionUnleashing Diffusion Priors for Faithful Image Super-resolution](https://huggingface.co/papers/2411.18824) - FaithDiff is a faithful image super-resolution method that leverages latent diffusion models by actively adapting the diffusion prior and jointly fine-tuning its components (encoder and diffusion model) with an alignment module to ensure high fidelity and structural consistency. | [FaithDiff Stable Diffusion XL Pipeline](#faithdiff-stable-diffusion-xl-pipeline) | [![Hugging Face Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-blue)](https://huggingface.co/jychen9811/FaithDiff) | [Junyang Chen, Jinshan Pan, Jiangxin Dong, IMAG Lab, (Adapted by Eliseu Silva)](https://github.com/JyChen9811/FaithDiff) |
 | Stable Diffusion 3 InstructPix2Pix Pipeline | Implementation of Stable Diffusion 3 InstructPix2Pix Pipeline | [Stable Diffusion 3 InstructPix2Pix Pipeline](#stable-diffusion-3-instructpix2pix-pipeline) | [![Hugging Face Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-blue)](https://huggingface.co/BleachNick/SD3_UltraEdit_freeform) [![Hugging Face Models](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-blue)](https://huggingface.co/CaptainZZZ/sd3-instructpix2pix) | [Jiayu Zhang](https://github.com/xduzhangjiayu) and [Haozhe Zhao](https://github.com/HaozheZhao)|
+| Flux Kontext multiple images | Allow to call Flux Kontext by giving several images. These images will be separatly encoded in the latent space, then the latent vector will be concatenated | [Flux Kontext multiple input Pipeline](#flux-kontext-multiple images) | - |  https://github.com/Net-Mist |
 To load a custom pipeline you just need to pass the `custom_pipeline` argument to `DiffusionPipeline`, as one of the files in `diffusers/examples/community`. Feel free to send a PR with your own pipelines, we will merge them quickly.
 
 ```py
@@ -5480,3 +5481,49 @@ edited_image.save("edited_image.png")
 This model is trained on 512x512, so input size is better on 512x512.
 For better editing performance, please refer to this powerful model https://huggingface.co/BleachNick/SD3_UltraEdit_freeform and Paper "UltraEdit: Instruction-based Fine-Grained Image
 Editing at Scale", many thanks to their contribution!
+
+# Flux Kontext multiple images
+
+This is an implementation of Flux Kontext allowing the user to pass multiple reference images.
+
+These images will be encoded separatly and the latent vectors will be concatenated.
+
+as explained section 3 of [the paper](https://arxiv.org/pdf/2506.15742), the sequence concatenation mecanism of the model can extends the model capabilities to several images (however note that the current version of Flux-Kontext wasn't train for this). Currently, stacking on the first axis doesn't seem to give correct results, but stacking on the other 2 works.
+
+## Example Usage
+
+This pipeline loads 2 reference images, and generate an image using them.
+
+```python
+import torch
+
+from diffusers import FluxKontextPipeline
+from diffusers.utils import load_image
+
+
+pipe = FluxKontextPipeline.from_pretrained(
+    "black-forest-labs/FLUX.1-Kontext-dev",
+    torch_dtype=torch.bfloat16,
+    custom_pipeline="pipeline_flux_kontext_multiple_images",
+)
+pipe.to("cuda")
+
+pikachu_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/yarn-art-pikachu.png"
+).convert("RGB")
+cat_image = load_image(
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png"
+).convert("RGB")
+
+
+prompts = [
+    "Pikachu and the cat are sitting together at a pizzeria table, enjoying a delicious pizza.",
+]
+images = pipe(
+    multiple_images=[(pikachu_image, cat_image)],
+    prompt=prompts,
+    guidance_scale=2.5,
+    generator=torch.Generator().manual_seed(42),
+).images
+images[0].save("pizzeria.png")
+```
